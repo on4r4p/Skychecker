@@ -143,8 +143,11 @@ def Check_Line(lst_to_check,index,str_to_match):
 
 def Ring_It():
    global Err_Cnt
+   global Pass_Check
 
+   Pass_Check = False
    Err_pass = 0
+
    subprocess.Popen(["aplay","-q","%s"%Path_sonar_wav])
 #   os.system("aplay -q %s"%Path_sonar_wav)
 
@@ -161,6 +164,7 @@ def Ring_It():
             if usr_input == passphrase:
                 os.system("killall aplay")
                 Err_Cnt = 0
+                Pass_Check = True
                 return(Main_Loop())
             else:
                 Err_pass += 1
@@ -171,17 +175,19 @@ def Ring_It():
 
                    subprocess.Popen(["aplay","-q","%s"%Path_alarm_wav])
 #                   os.system("aplay -q %s"%Path_alarm_wav)
+                   return(Main_Loop(True))
                 else:
                    sys_msg = "==!!Wrong Passphrase at %s !!=="%timestamp 
                    syslog.syslog(syslog.LOG_WARNING,sys_msg)
    except TimeoutError as e:
-       print("Error:%s"%str(e))
-       timestamp = str(datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S"))
-       sys_msg = "!!!!User has failed to enter correct password within a minute at %s !!!!"%(timestamp)
-       syslog.syslog(syslog.LOG_ERR,sys_msg)
-       subprocess.Popen(["aplay","-q",Path_alarm_wav])
-#       os.system("aplay -q %s"%Path_alarm_wav)
-       return(Main_Loop(True))
+       if not Pass_Check:
+           print("Error:%s"%str(e))
+           timestamp = str(datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S"))
+           sys_msg = "!!!!User has failed to enter correct password within a minute at %s !!!!"%(timestamp)
+           syslog.syslog(syslog.LOG_ERR,sys_msg)
+           subprocess.Popen(["aplay","-q",Path_alarm_wav])
+    #       os.system("aplay -q %s"%Path_alarm_wav)
+           return(Main_Loop(True))
 
 
 
@@ -217,12 +223,13 @@ if __name__ == "__main__":
     Max_Err = 4
     Threshold = 3
     SLEEP = 2
+    Pass_Check = False
 
     DBG = False
     DBG_OUTPUT = False
 
     Res_to_match = ("52 02 0a 03 02 00 00 00 00 00 00 00 00 00 00 00","41 01 ff 77 00 00 00 00 00 00 00 00 00 00 00 00")
-    passphrase = "passphrase"
+    passphrase = "alice"
 
 
     Path_SkyReader = "./skyrdr"
